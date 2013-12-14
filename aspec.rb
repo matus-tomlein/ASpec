@@ -3,7 +3,7 @@ require 'aquarium'
 include Aquarium::Aspects
 
 ## ASpec is a simple library that utilizes aspect oriented programming and meta programming
-## to enable mocking, method call counting, Liskov Substition Principle testing and more
+## to enable stubing, method call counting, Liskov Substition Principle testing and more
 class ASpec
   attr_reader :return_values,
     :method_call_counts, :expected_method_call_counts,
@@ -14,7 +14,7 @@ class ASpec
   def initialize
     @replaced_class = ''
     @replacing_classes = [nil]
-    @method_mocks = {}
+    @method_stubs = {}
     @aspects = []
     @return_values = []
     @method_call_counts = {}
@@ -41,14 +41,14 @@ class ASpec
   end
 
   ## Replaces the method of the type with the given block
-  def mock(type, method, &block)
+  def stub(type, method, &block)
     type, method = type.to_s, method.to_s
-    @method_mocks[[type, method]] = block
+    @method_stubs[[type, method]] = block
 
     aspect = Aspect.new :around, :calls_to => method, :for_type => eval(type) do |join_point, object, *args|
       key = [object.class.to_s, join_point.method_name.to_s]
-      if @method_mocks.has_key? key
-        @method_mocks[key].call
+      if @method_stubs.has_key? key
+        @method_stubs[key].call
       else
         jp.proceed
       end

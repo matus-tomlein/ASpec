@@ -1,76 +1,83 @@
 require_relative 'aspec'
 
-class AppleTest
-  def apple
-    "apples"
-  end
-
-  def argo(arg1, arg2, arg3)
-    "nice"
+class Car
+  def manufacturer
+    'any'
   end
 end
 
-class OrangeTest < AppleTest
-  def apple
-    "oranges"
+class BMW < Car
+  def manufacturer
+    'BMW'
   end
 end
 
-class BananaTest < AppleTest
-  def apple
-    "bananas"
+class Mercedes < Car
+  def manufacturer
+    'Mercedes'
+  end
+end
+
+class Skoda < Car
+  def manufacturer
+    'Skoda'
+  end
+
+  def price(type, currency)
+    ## Missing implementation
+    10000
   end
 end
 
 describe ASpec do
   it "should test LSP for all given classes" do
-    ASpec.new.lsp(:AppleTest, [:BananaTest, :OrangeTest]).execute do
-      test = AppleTest.new
-      test.apple
-    end.return_values.should == ['apples', 'bananas', 'oranges']
+    ASpec.new.lsp(:Car, [:BMW, :Mercedes, :Skoda]).execute do
+      car = Car.new
+      car.manufacturer
+    end.return_values.should == ['any', 'BMW', 'Mercedes', 'Skoda']
   end
 
-  it "should mock methods correctly" do
-    ASpec.new.mock(:AppleTest, :apple) { 'pineapples' }.execute { AppleTest.new.apple }.return_value.should == 'pineapples'
-    AppleTest.new.apple.should == 'apples'
+  it "should stub methods correctly" do
+    ASpec.new.stub(:BMW, :manufacturer) { 'Dacia' }.execute { BMW.new.manufacturer }.return_value.should == 'Dacia'
+    BMW.new.manufacturer.should == 'BMW'
   end
 
-  it "should mock multiple methods" do
+  it "should stub multiple methods" do
     aspec = ASpec.new
-    aspec.mock(:AppleTest, :apple) { 'pineapples' }
-    aspec.mock(:OrangeTest, :apple) { 'pears' }
-    aspec.execute { [AppleTest.new.apple, OrangeTest.new.apple] }
-    aspec.return_value.first.should == 'pineapples'
-    aspec.return_value.last.should == 'pears'
-    AppleTest.new.apple.should == 'apples'
-    OrangeTest.new.apple.should == 'oranges'
+    aspec.stub(:BMW, :manufacturer) { 'Dacia' }
+    aspec.stub(:Skoda, :manufacturer) { 'Bentley' }
+    aspec.execute { [BMW.new.manufacturer, Skoda.new.manufacturer] }
+    aspec.return_value.first.should == 'Dacia'
+    aspec.return_value.last.should == 'Bentley'
+    BMW.new.manufacturer.should == 'BMW'
+    Skoda.new.manufacturer.should == 'Skoda'
   end
 
   it "should raise exceptions correctly" do
-    ASpec.new.raise_exception(:AppleTest, :apple).execute do
+    ASpec.new.raise_exception(:Mercedes, :manufacturer).execute do
       exception = false
       begin
-        AppleTest.new.apple
+        Mercedes.new.manufacturer
       rescue
         exception = true
       end
       exception
     end.return_value.should == true
 
-    AppleTest.new.apple.should == 'apples'
+    Mercedes.new.manufacturer.should == 'Mercedes'
   end
 
   it "should raise multiple exceptions" do
     aspec = ASpec.new
-    aspec.raise_exception :AppleTest, :apple
-    aspec.raise_exception :OrangeTest, :apple
+    aspec.raise_exception :Mercedes, :manufacturer
+    aspec.raise_exception :BMW, :manufacturer
     aspec.execute do
       exception = false
       begin
-        AppleTest.new.apple
+        Mercedes.new.manufacturer
       rescue
         begin
-          OrangeTest.new.apple
+          BMW.new.manufacturer
         rescue
           exception = true
         end
@@ -78,54 +85,55 @@ describe ASpec do
       exception
     end.return_value.should == true
 
-    AppleTest.new.apple.should == 'apples'
+    Mercedes.new.manufacturer.should == 'Mercedes'
+    BMW.new.manufacturer.should == 'BMW'
   end
 
   it "should count method calls" do
     aspec = ASpec.new
-    aspec.count_method_calls :AppleTest, :apple, 2
-    aspec.count_method_calls :AppleTest, :argo, 1
-    aspec.count_method_calls :OrangeTest, :apple, 1
-    aspec.count_method_calls :BananaTest, :apple, 0
+    aspec.count_method_calls :Skoda, :manufacturer, 2
+    aspec.count_method_calls :Skoda, :price, 1
+    aspec.count_method_calls :Mercedes, :manufacturer, 1
+    aspec.count_method_calls :BMW, :manufacturer, 0
     aspec.execute do
-      apple = AppleTest.new
-      apple.apple
-      apple.apple
-      apple.argo 'a1','a2','a3'
-      OrangeTest.new.apple
+      skoda = Skoda.new
+      skoda.manufacturer
+      skoda.manufacturer
+      skoda.price 'Octavia', 'EUR'
+      Mercedes.new.manufacturer
     end
     aspec.method_call_counts.should == aspec.expected_method_call_counts
 
     aspec = ASpec.new
-    aspec.count_method_calls :AppleTest, :apple, 1
-    aspec.count_method_calls :BananaTest, :apple, 0
+    aspec.count_method_calls :BMW, :manufacturer, 1
+    aspec.count_method_calls :Mercedes, :manufacturer, 0
     aspec.execute do
-      AppleTest.new.apple
-      AppleTest.new.apple
+      BMW.new.manufacturer
+      BMW.new.manufacturer
     end
     (aspec.method_call_counts == aspec.expected_method_call_counts).should == false
   end
 
   it "should keep track of method arguments" do
     aspec = ASpec.new
-    aspec.expect_method_arguments :AppleTest, :argo, [['a1', 'a2', 'a3'], ['a2', 'a1', 'a0']]
-    aspec.expect_method_arguments :AppleTest, :apple, [[]]
+    aspec.expect_method_arguments :Skoda, :price, [['Octavia', 'EUR'], ['Rapid', 'EUR']]
+    aspec.expect_method_arguments :Skoda, :manufacturer, [[]]
     aspec.execute do
-      apple = AppleTest.new
-      apple.apple
-      apple.argo 'a1', 'a2', 'a3'
-      apple.argo 'a2', 'a1', 'a0'
+      skoda = Skoda.new
+      skoda.manufacturer
+      skoda.price 'Octavia', 'EUR'
+      skoda.price 'Rapid', 'EUR'
     end
     aspec.method_call_arguments.should == aspec.expected_method_call_arguments
 
     aspec = ASpec.new
-    aspec.expect_method_arguments :AppleTest, :argo, [['a1', 'a2', 'a3'], ['a2', 'a1', 'a1']]
-    aspec.expect_method_arguments :AppleTest, :apple, [[1]]
+    aspec.expect_method_arguments :Skoda, :price, [['Octavia', 'EUR'], ['Rapid', 'EUR']]
+    aspec.expect_method_arguments :Skoda, :manufacturer, [[1]]
     aspec.execute do
-      apple = AppleTest.new
-      apple.apple
-      apple.argo 'a1', 'a2', 'a3'
-      apple.argo 'a2', 'a1', 'a0'
+      skoda = Skoda.new
+      skoda.manufacturer
+      skoda.price 'Octavia', 'EUR'
+      skoda.price 'Rapid', 'EUR'
     end
     (aspec.method_call_arguments == aspec.expected_method_call_arguments).should == false
   end
