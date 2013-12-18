@@ -1,4 +1,4 @@
-require_relative 'aspec'
+require_relative 'aspeclib'
 
 class Car
   def manufacturer
