@@ -14,6 +14,6 @@ gem install aspeclib
 
 ## More information
 
-See the test cases in lib/aspec_test.rb for examples of ASpec.
+See the test cases in [lib/aspeclib\_test.rb](lib/aspeclib_test.rb) for examples of ASpec.
 
-For more information, see the paper ASpec: [Unit Testing Using Aspect-Oriented Programming](https://www.dropbox.com/s/hm6i0887blmf4km/aspec.pdf).
+For more information, see the paper ASpec: [Unit Testing Using Aspect-Oriented Programming](docs/aspec.pdf).
